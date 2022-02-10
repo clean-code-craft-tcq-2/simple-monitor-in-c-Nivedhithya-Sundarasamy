@@ -10,4 +10,4 @@ extern int checkBatterySoC(float SoC);
 extern int checkBatteryChargeRate(float chargeRate);
 extern int checkBatteryCondition(float temperature, float SoC, float chargeRate);
 int printOnConsole(const char* statement);
-extern int (*fpPrintOnConsole) (const char*);
+extern int (*fpPrint) (const char*);
