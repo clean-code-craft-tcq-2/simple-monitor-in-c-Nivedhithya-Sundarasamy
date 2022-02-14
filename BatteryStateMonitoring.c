@@ -59,14 +59,8 @@ _Bool checkIfParameterIsWithinLowerLimit(float parameterValue, float minValue, i
 	return (parameterValue <  minValue) ?  batteryAlert(parameter, parameterStateChecked, alertlanguageID) : 0;
 }
 
-int checkParameterStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
-	const char* parameter, enum alertLanguageID alertlanguageID) {
-	int parameterStatus;
-
-	parameterStatus = (checkIfParamterInRange(parameterValue, minTolerance, maxTolerance, NORMAL, parameter, alertlanguageID)) ||
-		((!checkIfParameterIsWithinUpperLimit(parameterValue, maxThreshold, HIGH_BREACH, parameter, alertlanguageID)) && 
-		(!checkIfParameterIsWithinLowerLimit(parameterValue, minThreshold, LOW_BREACH, parameter, alertlanguageID)));
-
+int checkParameterWarningStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
+	const char* parameter, enum alertLanguageID alertlanguageID, int parameterStatus) {
 	for(int i = 0; i < numberOfParametersEnabledForWarning; i++) {
 		if(strcmp(parameter,parameterNamesEnabledForWarning[i])==0) {
 		parameterStatus = (parameterStatus) && (!checkIfParamterInRange(parameterValue, maxTolerance, maxThreshold,
@@ -75,6 +69,18 @@ int checkParameterStatus(float parameterValue, float minThreshold, float minTole
 		}
 	}
 	return parameterStatus;
+}
+	
+int checkParameterStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
+	const char* parameter, enum alertLanguageID alertlanguageID) {
+	int parameterStatus;
+
+	parameterStatus = (checkIfParamterInRange(parameterValue, minTolerance, maxTolerance, NORMAL, parameter, alertlanguageID)) ||
+		((!checkIfParameterIsWithinUpperLimit(parameterValue, maxThreshold, HIGH_BREACH, parameter, alertlanguageID)) && 
+		(!checkIfParameterIsWithinLowerLimit(parameterValue, minThreshold, LOW_BREACH, parameter, alertlanguageID)));
+
+	return checkParameterWarningStatus(parameterValue, minThreshold, minTolerance, maxTolerance, maxThreshold,
+			parameter, alertlanguageID, parameterStatus);
 }
 
 int checkBatteryCondition(float temperature, float SoC, float chargeRate, enum alertLanguageID alertlanguageID){
