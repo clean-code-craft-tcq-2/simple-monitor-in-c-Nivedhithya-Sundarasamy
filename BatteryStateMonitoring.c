@@ -2,62 +2,87 @@
 #include <string.h>
 #include "BatteryStateMonitoring.h"
 
-char alertString[100] = "Alert: Battery Status: Out of Range: ";
+enum parameterState{NORMAL = 1, LOW_BREACH, LOW_WARNING, HIGH_WARNING, HIGH_BREACH};
 
-int (*fpPrint) (const char*) = &printOnConsole;
+//Array to add/remove parameters to enable/disable warning alerts.
+const char* parameterNamesEnabledForWarning[] = {"Temperature" , "State of Charge"};
 
-int printOnConsole(const char* statement) {
+int numberOfParametersEnabledForWarning =
+	sizeof(parameterNamesEnabledForWarning) / sizeof(parameterNamesEnabledForWarning[0]);
+
+char* arrayOfAlertStrings[][5] = {
+	[ENGLISH] = {
+	"Battery Status: Normal ",
+	"Battery Status: Low Breach ",
+	"Battery Status: Low Warning ",
+	"Battery Status: High Warning ",
+	"Battery Status: High Breach "
+	},
+	[GERMAN] = {
+	"Batteriestatus: Normal ",
+	"Batteriestatus: Niedrige Verletzung ",
+	"Batteriestatus: Niedrige Warnung ",
+	"Batteriestatus: Hohe Warnung ",
+	"Batteriestatus: Hoher Bruch "
+	}
+};
+
+void printOnConsole(const char* statement) {
 	printf("%s \n", statement);
-	return 0;
 }
 
-int checkIfParamterInRange(float parameterValue, float min_threshold, float max_threshold) {
-	if (parameterValue < min_threshold || parameterValue > max_threshold) {
-		return 0;
+void setAlertStatement(const char* parameter, enum parameterState parameterstate,
+		enum alertLanguageID alertlanguageID, char* alertStatement) {
+	strcpy(alertStatement, arrayOfAlertStrings[alertlanguageID][parameterstate-1]);
+	strcat(alertStatement,  parameter);
+}
+
+int batteryAlert(const char* parameter, enum parameterState parameterstate, enum alertLanguageID alertlanguageID) {
+	char alertStatement[100];
+	setAlertStatement(parameter, parameterstate, alertlanguageID, alertStatement);	
+	printOnConsole(alertStatement);
+	return 1; 
+}
+
+_Bool checkIfParamterInRange(float parameterValue, float minValue, float maxValue, int parameterStateChecked,
+		const char* parameter, enum alertLanguageID alertlanguageID) {
+	return (parameterValue > minValue && parameterValue < maxValue) ? batteryAlert(parameter, parameterStateChecked, alertlanguageID) : 0;
+}
+
+_Bool checkIfParameterIsWithinUpperLimit(float parameterValue, float maxValue, int parameterStateChecked,
+	const char* parameter, enum alertLanguageID alertlanguageID) {
+	return (parameterValue  > maxValue) ?  batteryAlert(parameter, parameterStateChecked, alertlanguageID) : 0;
+}
+
+_Bool checkIfParameterIsWithinLowerLimit(float parameterValue, float minValue, int parameterStateChecked,
+	const char* parameter, enum alertLanguageID alertlanguageID) {
+	return (parameterValue <  minValue) ?  batteryAlert(parameter, parameterStateChecked, alertlanguageID) : 0;
+}
+
+int checkParameterStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
+	const char* parameter, enum alertLanguageID alertlanguageID) {
+	int parameterStatus;
+
+	parameterStatus = (checkIfParamterInRange(parameterValue, minTolerance, maxTolerance, NORMAL, parameter, alertlanguageID)) ||
+		((!checkIfParameterIsWithinUpperLimit(parameterValue, maxThreshold, HIGH_BREACH, parameter, alertlanguageID)) && 
+		(!checkIfParameterIsWithinLowerLimit(parameterValue, minThreshold, LOW_BREACH, parameter, alertlanguageID)));
+
+	for(int i = 0; i < numberOfParametersEnabledForWarning; i++) {
+		if(strcmp(parameter,parameterNamesEnabledForWarning[i])==0) {
+		parameterStatus = (parameterStatus) && (!checkIfParamterInRange(parameterValue, maxTolerance, maxThreshold,
+		HIGH_WARNING, parameter, alertlanguageID)) && (!checkIfParamterInRange(parameterValue, minThreshold,
+		minTolerance, LOW_WARNING, parameter, alertlanguageID)); 
+		}
 	}
-	return 1;
+	return parameterStatus;
 }
 
-int checkIfParameterIsWithinLimit(float parameterValue, float max_limit) {
-	if (parameterValue  > max_limit) {
-		return 0;
-	}
-	return 1;
-}
-
-int checkParameterStatus(int status, const char* parameter) {
-	char statement[100];
-	strcpy(statement, alertString);
-	strcat(statement, parameter);
-	if (status == 0) {
-		(*fpPrint)(statement);
-	}
-	return status;
-}
-
-int checkBatteryTemperature(float temperature) {
-	int status;
-	status = checkIfParamterInRange(temperature, MIN_THRESHOLD_BATT_TEMP, MAX_THRESHOLD_BATT_TEMP);
-	status = checkParameterStatus(status, "Temperature");
-	return status;
-}
-
-int checkBatterySoC(float SoC) {
-	int status;
-	status = checkIfParamterInRange(SoC, MIN_THRESHOLD_BATT_SoC, MAX_THRESHOLD_BATT_SoC);
-	status = checkParameterStatus(status, "State of Charge");
-	return status;
-}
-
-int checkBatteryChargeRate(float chargeRate){
-	int status;
-	status = checkIfParameterIsWithinLimit(chargeRate, MAX_THRESHOLD_BATT_CHARGE_RATE);
-	status = checkParameterStatus(status, "Charge Rate");
-	return status;
-}
-
-int checkBatteryCondition(float temperature, float SoC, float chargeRate){
-	int batt_status;
-	batt_status =(checkBatteryTemperature(temperature)) && (checkBatterySoC(SoC)) && (checkBatteryChargeRate(chargeRate));
-	return batt_status;	
+int checkBatteryCondition(float temperature, float SoC, float chargeRate, enum alertLanguageID alertlanguageID){
+	int batteryStatus;
+	batteryStatus = (checkParameterStatus(temperature, MIN_THRESHOLD_BATT_TEMP, MIN_TOLERANCE_BATT_TEMP, MAX_TOLERANCE_BATT_TEMP,
+		MAX_THRESHOLD_BATT_TEMP, "Temperature", alertlanguageID)) && (checkParameterStatus(SoC, MIN_THRESHOLD_BATT_SoC, MIN_TOLERANCE_BATT_SoC,
+		MAX_TOLERANCE_BATT_SoC, MAX_THRESHOLD_BATT_SoC, "State of Charge", alertlanguageID)) && (checkParameterStatus(chargeRate,
+		MIN_THRESHOLD_BATT_CHARGE_RATE, MIN_TOLERANCE_BATT_CHARGE_RATE, MAX_TOLERANCE_BATT_CHARGE_RATE,
+		MAX_THRESHOLD_BATT_CHARGE_RATE, "Charge Rate", alertlanguageID));
+	return batteryStatus;	
 }

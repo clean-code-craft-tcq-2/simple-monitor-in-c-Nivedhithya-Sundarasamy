@@ -3,11 +3,18 @@
 #define MIN_THRESHOLD_BATT_SoC 20
 #define MAX_THRESHOLD_BATT_SoC 80
 #define MAX_THRESHOLD_BATT_CHARGE_RATE 0.8
+#define MIN_THRESHOLD_BATT_CHARGE_RATE 0.5
+#define TOLERANCE_PERCENTAGE 0.05
+#define TOLERANCE_BATT_TEMP (TOLERANCE_PERCENTAGE * MAX_THRESHOLD_BATT_TEMP)
+#define MAX_TOLERANCE_BATT_TEMP (MAX_THRESHOLD_BATT_TEMP - TOLERANCE_BATT_TEMP)
+#define MIN_TOLERANCE_BATT_TEMP (MIN_THRESHOLD_BATT_TEMP + TOLERANCE_BATT_TEMP)
+#define TOLERANCE_BATT_SoC (TOLERANCE_PERCENTAGE * MAX_THRESHOLD_BATT_SoC)
+#define MAX_TOLERANCE_BATT_SoC (MAX_THRESHOLD_BATT_SoC - TOLERANCE_BATT_SoC)
+#define MIN_TOLERANCE_BATT_SoC (MIN_THRESHOLD_BATT_SoC + TOLERANCE_BATT_SoC)
+#define TOLERANCE_BATT_CHARGE_RATE (TOLERANCE_PERCENTAGE * MAX_THRESHOLD_BATT_CHARGE_RATE)
+#define MAX_TOLERANCE_BATT_CHARGE_RATE (MAX_THRESHOLD_BATT_CHARGE_RATE - TOLERANCE_BATT_CHARGE_RATE)
+#define MIN_TOLERANCE_BATT_CHARGE_RATE (MIN_THRESHOLD_BATT_CHARGE_RATE + TOLERANCE_BATT_CHARGE_RATE)
 
-
-extern int checkBatteryTemperature(float temperature);
-extern int checkBatterySoC(float SoC);
-extern int checkBatteryChargeRate(float chargeRate);
-extern int checkBatteryCondition(float temperature, float SoC, float chargeRate);
-int printOnConsole(const char* statement);
-extern int (*fpPrint) (const char*);
+enum alertLanguageID{ENGLISH, GERMAN};
+extern int checkBatteryCondition(float temperature, float SoC, float chargeRate, enum alertLanguageID alertlanguageID);
+void printOnConsole(const char* statement);
