@@ -59,20 +59,26 @@ _Bool checkIfParameterIsWithinLowerLimit(float parameterValue, float minValue, i
 	return (parameterValue <  minValue) ?  batteryAlert(parameter, parameterStateChecked, alertlanguageID) : 0;
 }
 
+_Bool checkIfParameterEnabledForWarningStatus(const char* parameterName, int parameterIndex) {
+		return (strcmp(parameterName,parameterNamesEnabledForWarning[parameterIndex])==0) ? 1 : 0;
+}
+
 void checkParameterWarningStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
-	const char* parameter, enum alertLanguageID alertlanguageID, int *parameterStatus, int parameterIndex) {
-		if(strcmp(parameter,parameterNamesEnabledForWarning[parameterIndex])==0) {
-		*parameterStatus = (*parameterStatus) && (!checkIfParamterInRange(parameterValue, maxTolerance, maxThreshold,
-		HIGH_WARNING, parameter, alertlanguageID)) && (!checkIfParamterInRange(parameterValue, minThreshold,
-		minTolerance, LOW_WARNING, parameter, alertlanguageID)); 
-		}
+	const char* parameter, enum alertLanguageID alertlanguageID, int *parameterStatus) {
+	*parameterStatus = (*parameterStatus) && (!checkIfParamterInRange(parameterValue, maxTolerance, maxThreshold,
+	HIGH_WARNING, parameter, alertlanguageID)) && (!checkIfParamterInRange(parameterValue, minThreshold,
+	minTolerance, LOW_WARNING, parameter, alertlanguageID)); 
 }
 	
 int checkParameterEnabledForWarningStatus(float parameterValue, float minThreshold, float minTolerance, float maxTolerance, float maxThreshold,
 	const char* parameter, enum alertLanguageID alertlanguageID, int parameterStatus) {
 	for(int parameterIndex = 0; parameterIndex < numberOfParametersEnabledForWarning; parameterIndex++) {
-		checkParameterWarningStatus(parameterValue, minThreshold, minTolerance, maxTolerance, maxThreshold,
-		parameter, alertlanguageID, &parameterStatus, parameterIndex);	
+		int parameterWarningStatus;
+		parameterWarningStatus = checkIfParameterEnabledForWarningStatus(parameter, parameterIndex);
+		if(parameterWarningStatus) {
+			checkParameterWarningStatus(parameterValue, minThreshold, minTolerance, maxTolerance, maxThreshold,
+			parameter, alertlanguageID, &parameterStatus);	
+		}
 	}
 	return parameterStatus;
 }
